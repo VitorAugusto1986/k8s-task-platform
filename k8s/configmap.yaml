@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: task-platform-config
+  namespace: task-platform
+data:
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_NAME: taskdb
+  SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+  SPRING_FLYWAY_ENABLED: "true"
+  SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+

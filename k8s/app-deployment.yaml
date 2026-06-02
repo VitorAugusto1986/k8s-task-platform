@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-platform
+  namespace: task-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: task-platform
+  template:
+    metadata:
+      labels:
+        app: task-platform
+    spec:
+      containers:
+        - name: task-platform
+          image: devcontainer-task-platform:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/taskdb
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: task-platform-secret
+                  key: DB_USERNAME
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: task-platform-secret
+                  key: DB_PASSWORD
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              valueFrom:
+                configMapKeyRef:
+                  name: task-platform-config
+                  key: SPRING_JPA_HIBERNATE_DDL_AUTO
+            - name: SPRING_FLYWAY_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: task-platform-config
+                  key: SPRING_FLYWAY_ENABLED
+            - name: SPRING_FLYWAY_LOCATIONS
+              valueFrom:
+                configMapKeyRef:
+                  name: task-platform-config
+                  key: SPRING_FLYWAY_LOCATIONS
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+
