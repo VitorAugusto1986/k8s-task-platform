@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS tasks (
+    id    BIGSERIAL    PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    done  BOOLEAN      NOT NULL DEFAULT FALSE
+);
+
