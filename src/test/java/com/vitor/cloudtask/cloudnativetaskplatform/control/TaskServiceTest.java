@@ -27,8 +27,6 @@ class TaskServiceTest {
     @InjectMocks
     private TaskService service;
 
-    // ── getAll ────────────────────────────────────────────────────────────────
-
     @Test
     @DisplayName("getAll() returns empty list when no tasks exist")
     void getAll_emptyList() {
@@ -47,8 +45,6 @@ class TaskServiceTest {
 
         assertThat(service.getAll()).hasSize(2);
     }
-
-    // ── getById ───────────────────────────────────────────────────────────────
 
     @Test
     @DisplayName("getById() returns the task when ID exists")
@@ -71,8 +67,6 @@ class TaskServiceTest {
                 .hasMessageContaining("999");
     }
 
-    // ── create ────────────────────────────────────────────────────────────────
-
     @Test
     @DisplayName("create() saves a task with the given title and done=false")
     void create_savesTask() {
@@ -86,8 +80,6 @@ class TaskServiceTest {
         assertThat(result.getId()).isEqualTo(1L);
         verify(repository).save(any(Task.class));
     }
-
-    // ── toggle ────────────────────────────────────────────────────────────────
 
     @Test
     @DisplayName("toggle() marks an undone task as done")
@@ -137,8 +129,6 @@ class TaskServiceTest {
         assertThat(taskA.isDone()).isTrue();
         assertThat(taskB.isDone()).isFalse();
     }
-
-    // ── delete ────────────────────────────────────────────────────────────────
 
     @Test
     @DisplayName("delete() removes the task by ID")
