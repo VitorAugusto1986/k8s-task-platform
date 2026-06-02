@@ -26,8 +26,6 @@ class TaskControllerTest {
     @MockitoBean
     private TaskService taskService;
 
-    // ── GET /tasks ────────────────────────────────────────────────────────────
-
     @Test
     @DisplayName("GET /tasks returns 200 and an empty JSON array when no tasks exist")
     void getAll_emptyList() throws Exception {
@@ -59,8 +57,6 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$[1].done").value(true));
     }
 
-    // ── GET /tasks/{id} ───────────────────────────────────────────────────────
-
     @Test
     @DisplayName("GET /tasks/{id} returns 200 and the task when found")
     void getById_returnsTask() throws Exception {
@@ -83,8 +79,6 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").value("Task not found: 999"));
     }
-
-    // ── POST /tasks ───────────────────────────────────────────────────────────
 
     @Test
     @DisplayName("POST /tasks returns 201 and the created task")
@@ -124,8 +118,6 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.status").value(400));
     }
 
-    // ── PUT /tasks/{id} ───────────────────────────────────────────────────────
-
     @Test
     @DisplayName("PUT /tasks/{id} returns 200 with the toggled task")
     void toggle_returnsUpdatedTask() throws Exception {
@@ -150,8 +142,6 @@ class TaskControllerTest {
 
         verify(taskService, times(1)).toggle(999L);
     }
-
-    // ── DELETE /tasks/{id} ────────────────────────────────────────────────────
 
     @Test
     @DisplayName("DELETE /tasks/{id} returns 204 when task is deleted")
