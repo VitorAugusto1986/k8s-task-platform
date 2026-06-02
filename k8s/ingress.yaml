@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: task-platform-ingress
+  namespace: task-platform
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: task-platform.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: task-platform
+                port:
+                  number: 80
+
