@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -57,12 +58,14 @@ class TaskControllerTest {
     }
 
     @Test
-    @DisplayName("POST /tasks creates a new task and returns 200 with the task")
+    @DisplayName("POST /tasks creates a new task from JSON body and returns 200")
     void create_returnsCreatedTask() throws Exception {
         Task created = new Task(1L, "Buy milk", false);
         when(taskService.create("Buy milk")).thenReturn(created);
 
-        mockMvc.perform(post("/tasks").param("title", "Buy milk"))
+        mockMvc.perform(post("/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Buy milk\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.title").value("Buy milk"))
