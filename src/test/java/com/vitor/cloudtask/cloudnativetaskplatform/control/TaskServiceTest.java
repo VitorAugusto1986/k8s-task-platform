@@ -1,6 +1,7 @@
 package com.vitor.cloudtask.cloudnativetaskplatform.control;
 
 import com.vitor.cloudtask.cloudnativetaskplatform.entity.Task;
+import com.vitor.cloudtask.cloudnativetaskplatform.exception.TaskNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class TaskServiceTest {
 
@@ -96,11 +98,11 @@ class TaskServiceTest {
     }
 
     @Test
-    @DisplayName("toggle() returns null when the task ID does not exist")
-    void toggle_returnsNullForUnknownId() {
-        Task result = service.toggle(999L);
-
-        assertThat(result).isNull();
+    @DisplayName("toggle() throws TaskNotFoundException when the task ID does not exist")
+    void toggle_throwsWhenNotFound() {
+        assertThatThrownBy(() -> service.toggle(999L))
+                .isInstanceOf(TaskNotFoundException.class)
+                .hasMessageContaining("999");
     }
 
     @Test
@@ -113,5 +115,46 @@ class TaskServiceTest {
 
         assertThat(taskA.isDone()).isTrue();
         assertThat(taskB.isDone()).isFalse();
+    }
+
+    // ── getById ───────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("getById() returns the task when ID exists")
+    void getById_returnsTask() {
+        Task created = service.create("Find me");
+
+        Task found = service.getById(created.getId());
+
+        assertThat(found).isNotNull();
+        assertThat(found.getTitle()).isEqualTo("Find me");
+    }
+
+    @Test
+    @DisplayName("getById() throws TaskNotFoundException when ID does not exist")
+    void getById_throwsWhenNotFound() {
+        assertThatThrownBy(() -> service.getById(999L))
+                .isInstanceOf(TaskNotFoundException.class)
+                .hasMessageContaining("999");
+    }
+
+    // ── delete ────────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("delete() removes the task from the list")
+    void delete_removesTask() {
+        Task created = service.create("To be deleted");
+
+        service.delete(created.getId());
+
+        assertThat(service.getAll()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("delete() throws TaskNotFoundException when ID does not exist")
+    void delete_throwsWhenNotFound() {
+        assertThatThrownBy(() -> service.delete(999L))
+                .isInstanceOf(TaskNotFoundException.class)
+                .hasMessageContaining("999");
     }
 }

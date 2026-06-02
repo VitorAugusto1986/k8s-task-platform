@@ -2,6 +2,7 @@ package com.vitor.cloudtask.cloudnativetaskplatform.boundary;
 
 import com.vitor.cloudtask.cloudnativetaskplatform.control.TaskService;
 import com.vitor.cloudtask.cloudnativetaskplatform.entity.Task;
+import com.vitor.cloudtask.cloudnativetaskplatform.exception.TaskNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,8 @@ class TaskControllerTest {
     @MockitoBean
     private TaskService taskService;
 
+    // ── GET /tasks ────────────────────────────────────────────────────────────
+
     @Test
     @DisplayName("GET /tasks returns 200 and an empty JSON array when no tasks exist")
     void getAll_emptyList() throws Exception {
@@ -40,11 +43,10 @@ class TaskControllerTest {
     @Test
     @DisplayName("GET /tasks returns 200 and all tasks as JSON")
     void getAll_withTasks() throws Exception {
-        List<Task> tasks = List.of(
+        when(taskService.getAll()).thenReturn(List.of(
                 new Task(1L, "Task A", false),
                 new Task(2L, "Task B", true)
-        );
-        when(taskService.getAll()).thenReturn(tasks);
+        ));
 
         mockMvc.perform(get("/tasks"))
                 .andExpect(status().isOk())
@@ -57,16 +59,42 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$[1].done").value(true));
     }
 
+    // ── GET /tasks/{id} ───────────────────────────────────────────────────────
+
     @Test
-    @DisplayName("POST /tasks creates a new task from JSON body and returns 200")
+    @DisplayName("GET /tasks/{id} returns 200 and the task when found")
+    void getById_returnsTask() throws Exception {
+        when(taskService.getById(1L)).thenReturn(new Task(1L, "Buy milk", false));
+
+        mockMvc.perform(get("/tasks/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.title").value("Buy milk"))
+                .andExpect(jsonPath("$.done").value(false));
+    }
+
+    @Test
+    @DisplayName("GET /tasks/{id} returns 404 when task does not exist")
+    void getById_notFound_returns404() throws Exception {
+        when(taskService.getById(999L)).thenThrow(new TaskNotFoundException(999L));
+
+        mockMvc.perform(get("/tasks/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("Task not found: 999"));
+    }
+
+    // ── POST /tasks ───────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("POST /tasks returns 201 and the created task")
     void create_returnsCreatedTask() throws Exception {
-        Task created = new Task(1L, "Buy milk", false);
-        when(taskService.create("Buy milk")).thenReturn(created);
+        when(taskService.create("Buy milk")).thenReturn(new Task(1L, "Buy milk", false));
 
         mockMvc.perform(post("/tasks")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"Buy milk\"}"))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.title").value("Buy milk"))
                 .andExpect(jsonPath("$.done").value(false));
@@ -75,10 +103,33 @@ class TaskControllerTest {
     }
 
     @Test
-    @DisplayName("PUT /tasks/{id} toggles the task and returns 200 with the updated task")
+    @DisplayName("POST /tasks returns 400 when title is blank")
+    void create_blankTitle_returns400() throws Exception {
+        mockMvc.perform(post("/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("POST /tasks returns 400 when title exceeds 100 characters")
+    void create_titleTooLong_returns400() throws Exception {
+        String longTitle = "a".repeat(101);
+
+        mockMvc.perform(post("/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"" + longTitle + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    // ── PUT /tasks/{id} ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("PUT /tasks/{id} returns 200 with the toggled task")
     void toggle_returnsUpdatedTask() throws Exception {
-        Task toggled = new Task(1L, "Buy milk", true);
-        when(taskService.toggle(1L)).thenReturn(toggled);
+        when(taskService.toggle(1L)).thenReturn(new Task(1L, "Buy milk", true));
 
         mockMvc.perform(put("/tasks/1"))
                 .andExpect(status().isOk())
@@ -89,13 +140,39 @@ class TaskControllerTest {
     }
 
     @Test
-    @DisplayName("PUT /tasks/{id} returns 200 with null body when task is not found")
-    void toggle_taskNotFound_returnsEmpty() throws Exception {
-        when(taskService.toggle(999L)).thenReturn(null);
+    @DisplayName("PUT /tasks/{id} returns 404 when task does not exist")
+    void toggle_notFound_returns404() throws Exception {
+        when(taskService.toggle(999L)).thenThrow(new TaskNotFoundException(999L));
 
         mockMvc.perform(put("/tasks/999"))
-                .andExpect(status().isOk());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
 
         verify(taskService, times(1)).toggle(999L);
+    }
+
+    // ── DELETE /tasks/{id} ────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("DELETE /tasks/{id} returns 204 when task is deleted")
+    void delete_returns204() throws Exception {
+        doNothing().when(taskService).delete(1L);
+
+        mockMvc.perform(delete("/tasks/1"))
+                .andExpect(status().isNoContent());
+
+        verify(taskService, times(1)).delete(1L);
+    }
+
+    @Test
+    @DisplayName("DELETE /tasks/{id} returns 404 when task does not exist")
+    void delete_notFound_returns404() throws Exception {
+        doThrow(new TaskNotFoundException(999L)).when(taskService).delete(999L);
+
+        mockMvc.perform(delete("/tasks/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+
+        verify(taskService, times(1)).delete(999L);
     }
 }
